@@ -1,0 +1,446 @@
+---
+title: "UnstructureProject"
+author: "Naima Sawadogo"
+date: "2023-02-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r}
+library(rvest)
+library(httr)
+library(purrr)
+
+read_review <- read_html("https://www.metacritic.com/music/proof/bts/user-reviews?sort-by=date&num_items=100&page=0")
+
+review_dat <- read_review %>% 
+  html_elements(".review_section .date") %>% 
+  html_text()
+
+
+review_grade <- read_review %>% 
+  html_elements(".review_section .review_grade") %>% 
+  html_text()
+
+review_text <- read_review %>% 
+  html_elements(".review_section .review_body") %>% 
+  html_text()
+
+review_df <- data.frame(date = review_dat,
+                        grade = review_grade,
+                        text = review_text)
+
+```
+
+```{r}
+library(rvest)
+library(httr)
+library(purrr)
+
+# Set the URL pattern for all pages
+url_pattern <- "https://www.metacritic.com/music/proof/bts/user-reviews?sort-by=date&num_items=100&page=%d"
+
+# Initialize empty vectors to store the scraped data
+review_dat <- c()
+review_grade <- c()
+review_text <- c()
+
+# Loop through each page and scrape the data
+for (page in 0:33) {
+  # Construct the URL for the current page
+  url <- sprintf(url_pattern, page)
+  
+  # Try to scrape the data from the current page
+  tryCatch({
+    read_review <- read_html(url)
+    
+    review_dat <- c(review_dat, read_review %>% 
+                      html_elements(".review_section .date") %>% 
+                      html_text())
+    
+    review_grade <- c(review_grade, read_review %>% 
+                        html_elements(".review_section .review_grade") %>% 
+                        html_text())
+    
+    review_text <- c(review_text, read_review %>% 
+                       html_elements(".review_section .review_body") %>% 
+                       html_text())
+  }, error = function(e) {
+    # Handle timeouts by printing an error message and skipping to the next page
+    message(sprintf("Error on page %d: %s", page, e$message))
+  })
+  
+  # Add a delay of 1 second between requests
+  Sys.sleep(1)
+}
+
+# Combine the scraped data into a data frame
+review_df <- data.frame(date = review_dat,
+                        grade = review_grade,
+                        text = review_text)
+
+```
+
+```{r}
+library(httr)
+
+linkstart <- "https://www.metacritic.com/music/proof/bts/user-reviews?sort-by=date&num_items=100&page="
+linkend <- 0:33
+linkmiddle <- as.character(linkend)
+
+# Loop to store the links of all pages
+prooflinks <- purrr::map_chr(linkmiddle, function(x) paste0(linkstart, x))
+
+```
+
+```{r}
+library(rvest)
+library(purrr)
+library(httr)
+
+# Initialize empty vectors to store the scraped data
+review_dat <- c()
+review_grade <- c()
+review_text <- c()
+
+# Loop through each page and scrape the data
+for (url in prooflinks) {
+  # Try to scrape the data from the current page
+  tryCatch({
+    read_review <- read_html(url)
+    
+    review_dat <- c(review_dat, read_review %>% 
+                      html_elements(".review_section .date") %>% 
+                      html_text())
+    
+    review_grade <- c(review_grade, read_review %>% 
+                        html_elements(".review_section .review_grade") %>% 
+                        html_text())
+    
+    review_text <- c(review_text, read_review %>% 
+                       html_elements(".review_section .review_body") %>% 
+                       html_text())
+  }, error = function(e) {
+    # Handle timeouts by printing an error message and skipping to the next page
+    message(sprintf("Error on URL %s: %s", url, e$message))
+  })
+  
+  # Add a delay of 1 second between requests
+  #Sys.sleep(1)
+}
+
+# Combine the scraped data into a data frame
+proof_df <- data.frame(date = review_dat,
+                        grade = review_grade,
+                        text = review_text)
+
+#Adding a new column so that i can know which album each review is coming from 
+proof_df$album <- "proof"
+```
+
+# Let's redo the same thing for the BE album
+
+```{r}
+linkstart <- "https://www.metacritic.com/music/be/bts/user-reviews?sort-by=date&num_items=100&page="
+linkend <- 0:16
+linkmiddle <- as.character(linkend)
+
+# Loop to store the links of all pages
+BElinks <- purrr::map_chr(linkmiddle, function(x) paste0(linkstart, x))
+
+# Initialize empty vectors to store the scraped data
+review_dat <- c()
+review_grade <- c()
+review_text <- c()
+
+# Loop through each page and scrape the data
+for (url in BElinks) {
+  # Try to scrape the data from the current page
+  tryCatch({
+    read_review <- read_html(url)
+    
+    review_dat <- c(review_dat, read_review %>% 
+                      html_elements(".review_section .date") %>% 
+                      html_text())
+    
+    review_grade <- c(review_grade, read_review %>% 
+                        html_elements(".review_section .review_grade") %>% 
+                        html_text())
+    
+    review_text <- c(review_text, read_review %>% 
+                       html_elements(".review_section .review_body") %>% 
+                       html_text())
+  }, error = function(e) {
+    # Handle timeouts by printing an error message and skipping to the next page
+    message(sprintf("Error on URL %s: %s", url, e$message))
+  })
+  
+  # Add a delay of 1 second between requests
+  #Sys.sleep(1)
+}
+
+# Combine the scraped data into a data frame
+BE_df <- data.frame(date = review_dat,
+                        grade = review_grade,
+                        text = review_text)
+
+#Adding a new column so that i can know which album each review is coming from 
+BE_df$album <- "be"
+
+```
+
+# Map of the soul 7 
+```{r}
+linkstart <- "https://www.metacritic.com/music/map-of-the-soul-7/bts/user-reviews?sort-by=date&num_items=100&page="
+linkend <- 0:46
+linkmiddle <- as.character(linkend)
+
+# Loop to store the links of all pages
+MAOS7links <- purrr::map_chr(linkmiddle, function(x) paste0(linkstart, x))
+
+# Initialize empty vectors to store the scraped data
+review_dat <- c()
+review_grade <- c()
+review_text <- c()
+
+# Loop through each page and scrape the data
+for (url in MAOS7links) {
+  # Try to scrape the data from the current page
+  tryCatch({
+    read_review <- read_html(url)
+    
+    review_dat <- c(review_dat, read_review %>% 
+                      html_elements(".review_section .date") %>% 
+                      html_text())
+    
+    review_grade <- c(review_grade, read_review %>% 
+                        html_elements(".review_section .review_grade") %>% 
+                        html_text())
+    
+    review_text <- c(review_text, read_review %>% 
+                       html_elements(".review_section .review_body") %>% 
+                       html_text())
+  }, error = function(e) {
+    # Handle timeouts by printing an error message and skipping to the next page
+    message(sprintf("Error on URL %s: %s", url, e$message))
+  })
+  
+  # Add a delay of 1 second between requests
+  #Sys.sleep(1)
+}
+
+# Combine the scraped data into a data frame
+MAOS7_df<- data.frame(date = review_dat,
+                        grade = review_grade,
+                        text = review_text)
+
+#Adding a new column so that i can know which album each review is coming from 
+MAOS7_df$album <- "MapOfTheSoul7"
+```
+
+
+
+### Map of the Soul Persona
+```{r}
+linkstart <- "https://www.metacritic.com/music/map-of-the-soul-persona/bts/user-reviews?sort-by=date&num_items=100&page="
+linkend <- 0:1
+linkmiddle <- as.character(linkend)
+
+# Loop to store the links of all pages
+MAOSPersonalinks <- purrr::map_chr(linkmiddle, function(x) paste0(linkstart, x))
+
+# Initialize empty vectors to store the scraped data
+review_dat <- c()
+review_grade <- c()
+review_text <- c()
+
+# Loop through each page and scrape the data
+for (url in MAOSPersonalinks) {
+  # Try to scrape the data from the current page
+  tryCatch({
+    read_review <- read_html(url)
+    
+    review_dat <- c(review_dat, read_review %>% 
+                      html_elements(".review_section .date") %>% 
+                      html_text())
+    
+    review_grade <- c(review_grade, read_review %>% 
+                        html_elements(".review_section .review_grade") %>% 
+                        html_text())
+    
+    review_text <- c(review_text, read_review %>% 
+                       html_elements(".review_section .review_body") %>% 
+                       html_text())
+  }, error = function(e) {
+    # Handle timeouts by printing an error message and skipping to the next page
+    message(sprintf("Error on URL %s: %s", url, e$message))
+  })
+  
+  # Add a delay of 1 second between requests
+  #Sys.sleep(1)
+}
+
+# Combine the scraped data into a data frame
+MAOSPersona_df<- data.frame(date = review_dat,
+                        grade = review_grade,
+                        text = review_text)
+
+#Adding a new column so that i can know which album each review is coming from 
+MAOSPersona_df$album <- "MapOfTheSoulPersona"
+```
+
+
+### Love Yourself
+```{r}
+linkstart <- "https://www.metacritic.com/music/love-yourself-tear/bts/user-reviews?sort-by=date&num_items=100&page="
+linkend <- 0:4
+linkmiddle <- as.character(linkend)
+
+# Loop to store the links of all pages
+Loveyourselflinks <- purrr::map_chr(linkmiddle, function(x) paste0(linkstart, x))
+
+# Initialize empty vectors to store the scraped data
+review_dat <- c()
+review_grade <- c()
+review_text <- c()
+
+# Loop through each page and scrape the data
+for (url in Loveyourselflinks) {
+  # Try to scrape the data from the current page
+  tryCatch({
+    read_review <- read_html(url)
+    
+    review_dat <- c(review_dat, read_review %>% 
+                      html_elements(".review_section .date") %>% 
+                      html_text())
+    
+    review_grade <- c(review_grade, read_review %>% 
+                        html_elements(".review_section .review_grade") %>% 
+                        html_text())
+    
+    review_text <- c(review_text, read_review %>% 
+                       html_elements(".review_section .review_body") %>% 
+                       html_text())
+    
+  }, error = function(e) {
+    # Handle timeouts by printing an error message and skipping to the next page
+    message(sprintf("Error on URL %s: %s", url, e$message))
+  })
+  
+  # Add a delay of 1 second between requests
+  #Sys.sleep(1)
+}
+
+# Combine the scraped data into a data frame
+Loveyourself_df<- data.frame(date = review_dat,
+                        grade = review_grade,
+                        text = review_text)
+
+#Adding a new column so that i can know which album each review is coming from 
+Loveyourself_df$album <- "Loveyourself"
+```
+
+```{r}
+# Creating one dataframe for all reviews
+# 
+All_reviews <-rbind(proof_df, BE_df, MAOS7_df, MAOSPersona_df,Loveyourself_df)
+
+summary(All_reviews)
+```
+
+```{r}
+#Let's do some cleaning
+#df$grade <- gsub("\\D", "", df$grade)
+All_reviews$grade<- gsub("\\D", "", All_reviews$grade)
+All_reviews$text <- gsub("\n", "", All_reviews$text)
+#Removing extra space
+All_reviews$text <- gsub("\\s+", " ", All_reviews$text)
+#Removing punctuation 
+All_reviews$text <- gsub("[[:punct:]]", "", All_reviews$text)
+# Make text column lowercase
+All_reviews$text <- tolower(All_reviews$text)
+head(All_reviews$text)
+
+
+```
+
+```{r}
+# Load necessary packages
+library(tidyverse)
+library(tidytext)
+library(lubridate)
+
+# Assuming your data frame is called 'df' and the text column is called 'review', you can use the following code to perform sentiment analysis and create a time series object:
+# Converting the date columns into a data format 
+All_reviews$date <- as.POSIXct(All_reviews$date, format = "%b %d, %Y") 
+
+#Checking to see the grade datatype 
+class(All_reviews$grade)
+
+#Changing the type from char to int
+All_reviews$grade <- as.integer(All_reviews$grade)
+
+All_reviews$text <- str_replace_all(All_reviews$text, "This review contains spoilers, click expand to view.", "")
+head(All_reviews$text)
+
+test <- All_reviews
+head(All_reviews)
+
+```
+
+
+```{r}
+library(sentimentr)
+
+library(lexicon)
+
+library(magrittr)
+library(dplyr)
+
+# Creating the sentiment analysis for the reviews
+# 
+sentiments <- lapply(test$text, sentiment, polarity_dt = hash_sentiment_jockers_rinker)
+test$sentiment <- sapply(sentiments, function(x) mean(x$sentiment))
+
+#Averaging sentiment by date
+daily_sentiment <- aggregate(sentiment ~ date, test, mean)
+ 
+plot(daily_sentiment$date, daily_sentiment$sentiment, type = "l", xlab = "Date", ylab = "Average Sentiment", col = "red", lwd = 2, main = "Average Album sentiments Over Time")
+
+```
+
+```{r}
+# Aggregate the grades by day
+test <- subset(test, grade <= 10)
+summary(test$grade)
+daily_grades <- aggregate(grade ~ date, test, mean)
+
+summary(daily_grades)
+any(test$grade > 10)
+
+# Plot the daily average grades over time
+## Set up plot parameters
+par(mar = c(5, 5, 4, 2) + 0.1)
+plot(daily_grades$date, daily_grades$grade, type = "l", xlab = "Date", ylab = "Average Grade", col = "blue", lwd = 2, main = "Average Album Grade Over Time")
+grid()
+par(cex.lab = 1.2, cex.axis = 1.2)
+abline(h = 5, lty = "dashed")
+
+# Add a legend if needed
+
+plot(daily_grades$date, daily_grades$grade, type = "l", xlab = "Date", ylab = "Average Grade")
+
+```
+
+```{r}
+library(dplyr)
+Optimized_reviews <- inner_join(daily_grades, daily_sentiment, by = "date")
+save(Optimized_reviews, file = "Optimized_reviews.rda")
+summary(Optimized_reviews)
+```
+
+
